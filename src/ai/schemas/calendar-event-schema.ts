@@ -18,17 +18,6 @@ export const CalendarEventSchema = z.object({
 });
 export type CalendarEventType = z.infer<typeof CalendarEventSchema>;
 
-export const UpcomingEventsInputSchema = z.object({
-  accessToken: z.string().optional().describe('Google OAuth access token. This is optional for mock purposes but would be required in a real implementation.'),
-  maxResults: z.number().optional().default(3).describe('Maximum number of events to return.'),
-});
-export type UpcomingEventsInput = z.infer<typeof UpcomingEventsInputSchema>;
-
-export const UpcomingEventsOutputSchema = z.object({
-  events: z.array(CalendarEventSchema).describe('A list of upcoming calendar events.'),
-});
-export type UpcomingEventsOutput = z.infer<typeof UpcomingEventsOutputSchema>;
-
 export const AddCalendarEventInputSchema = z.object({
     accessToken: z.string().optional().describe('Google OAuth access token. Optional for mock.'),
     summary: z.string().describe('The title of the event.'),
@@ -42,4 +31,3 @@ export const AddCalendarEventOutputSchema = z.object({
     event: CalendarEventSchema.describe("The created calendar event.")
 });
 export type AddCalendarEventOutput = z.infer<typeof AddCalendarEventOutputSchema>;
-
