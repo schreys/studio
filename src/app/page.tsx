@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Location, DailyWeather } from '@/services/weather';
-import { getWeekForecast } from '@/services/weather';
+// Removed direct import of getWeekForecast
+import { fetchWeekForecastAction } from '@/app/actions/weather-actions'; // Import the server action
 import type { RideAnalysis } from '@/lib/ride-analyzer';
 import { analyzeRideConditions } from '@/lib/ride-analyzer';
 import WeekForecastCard from '@/components/bike-buddy/week-forecast-card';
@@ -45,7 +46,6 @@ export default function BikeBuddyPage() {
         (err) => {
           console.error("Error getting location:", err);
           setError("Could not get your location. Please enable location services and refresh. Defaulting to a sample location for now.");
-          // Fallback to a default location if user denies or an error occurs
           setLocation({ lat: 34.0522, lng: -118.2437 }); // Los Angeles
           setIsLoadingLocation(false);
         }
@@ -61,25 +61,26 @@ export default function BikeBuddyPage() {
     if (!location) return;
 
     setIsLoadingForecast(true);
-    // Keep existing error if it's a location error, otherwise clear for forecast fetch
     if (!error?.includes("location")) {
         setError(null);
     }
     try {
-      const dailyWeatherData = await getWeekForecast(location);
+      // Call the server action instead of the direct service function
+      const dailyWeatherData = await fetchWeekForecastAction(location);
+      
       const analyzedForecast = dailyWeatherData.map(dailyWeather => ({
         ...dailyWeather,
         analysis: analyzeRideConditions(dailyWeather),
       }));
       setForecastData(analyzedForecast);
-    } catch (e) {
+    } catch (e: any) { // Catch errors from the server action
       console.error("Failed to get forecast or analyze conditions:", e);
-      setError((prevError) => prevError || "Could not fetch weather forecast. Please try again later.");
+      setError((prevError) => prevError || e.message || "Could not fetch weather forecast. Please try again later.");
       setForecastData(null);
     } finally {
       setIsLoadingForecast(false);
     }
-  }, [location, error]); // Added error to dependency array to avoid clearing location error
+  }, [location, error]);
 
   useEffect(() => {
     if (location) {
@@ -189,3 +190,4 @@ export default function BikeBuddyPage() {
     </main>
   );
 }
+

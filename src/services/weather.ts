@@ -40,16 +40,12 @@ export interface DailyWeather extends Weather {
   date: string;
 }
 
-// Import axios for making HTTP requests
-import axios from 'axios';
-import { weatherApiConfig } from '@/lib/weather-api-config';
-
 /**
  * Transforms the raw API response from WeatherAPI.com into an array of DailyWeather objects.
  * @param apiForecastDays - The 'forecastday' array from the WeatherAPI.com response.
  * @returns An array of DailyWeather objects.
  */
-function transformApiResponse(apiForecastDays: any[]): DailyWeather[] {
+export function transformApiResponse(apiForecastDays: any[]): DailyWeather[] {
   return apiForecastDays.map(day => ({
     date: day.date, // YYYY-MM-DD format from API
     temperatureCelsius: day.day.avgtemp_c,
@@ -60,47 +56,13 @@ function transformApiResponse(apiForecastDays: any[]): DailyWeather[] {
 
 
 /**
- * Asynchronously retrieves a 7-day weather forecast for a given location using WeatherAPI.com.
- *
- * @param location The location for which to retrieve weather data.
- * @returns A promise that resolves to an array of DailyWeather objects for the next 7 days.
- * @throws Error if the API call fails or data is malformed.
- */
-export async function getWeekForecast(location: Location): Promise<DailyWeather[]> {
-  if (!weatherApiConfig.apiKey) {
-    console.error("Weather API key is not configured. Falling back to mock data.");
-    return getMockWeekForecast(location); // Fallback to mock if API key is missing
-  }
-
-  const apiUrl = `${weatherApiConfig.baseUrl}/forecast.json?key=${weatherApiConfig.apiKey}&q=${location.lat},${location.lng}&days=7&aqi=no&alerts=no`;
-
-  try {
-    console.log(`Fetching 7-day forecast from WeatherAPI.com for: ${location.lat}, ${location.lng}`);
-    const response = await axios.get(apiUrl);
-    
-    if (response.data && response.data.forecast && response.data.forecast.forecastday) {
-      return transformApiResponse(response.data.forecast.forecastday);
-    } else {
-      console.error("Unexpected API response structure:", response.data);
-      throw new Error("Failed to parse weather data from API.");
-    }
-  } catch (error) {
-    console.error("Failed to fetch real weather forecast:", error);
-    // Fallback to mock data in case of an error with the real API
-    console.warn("Falling back to mock weather data due to API error.");
-    return getMockWeekForecast(location);
-  }
-}
-
-
-/**
  * MOCK IMPLEMENTATION for fallback or testing.
  * Asynchronously retrieves a 7-day weather forecast for a given location.
  *
  * @param location The location for which to retrieve weather data.
  * @returns A promise that resolves to an array of DailyWeather objects for the next 7 days.
  */
-async function getMockWeekForecast(location: Location): Promise<DailyWeather[]> {
+export async function getMockWeekForecast(location: Location): Promise<DailyWeather[]> {
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 600));
 
@@ -139,3 +101,4 @@ async function getMockWeekForecast(location: Location): Promise<DailyWeather[]> 
 
   return forecast;
 }
+

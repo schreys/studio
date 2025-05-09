@@ -5,10 +5,12 @@
 export const weatherApiConfig = {
   /**
    * API key for the weather service.
-   * It's recommended to store this in environment variables.
-   * Example: process.env.WEATHER_API_KEY
+   * This is read from environment variables.
+   * While prefixed with NEXT_PUBLIC_, it's now primarily used server-side in a Server Action
+   * to keep it secure.
+   * Example: process.env.NEXT_PUBLIC_WEATHER_API_KEY
    */
-  apiKey: process.env.NEXT_PUBLIC_WEATHER_API_KEY, // Use NEXT_PUBLIC_ prefix for client-side access if needed, otherwise just process.env
+  apiKey: process.env.NEXT_PUBLIC_WEATHER_API_KEY,
   
   /**
    * Base URL for the weather API.
@@ -16,3 +18,4 @@ export const weatherApiConfig = {
    */
   baseUrl: 'https://api.weatherapi.com/v1',
 };
+
