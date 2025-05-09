@@ -1,18 +1,20 @@
 /**
- * @fileOverview Mock service for interacting with Google Calendar API.
+ * @fileOverview Service for interacting with Google Calendar API.
  */
+import axios from 'axios';
 
-// This matches the structure in CalendarEventSchema
-export interface MockCalendarEvent {
+// This matches the structure in CalendarEventSchema and Google Calendar API response for core fields
+export interface CalendarEvent {
   id: string;
   summary: string;
   start: { dateTime: string; timeZone?: string };
   end: { dateTime: string; timeZone?: string };
   htmlLink: string;
+  description?: string;
 }
 
 /**
- * Simulates fetching upcoming Google Calendar events.
+ * Simulates fetching upcoming Google Calendar events (remains MOCKED).
  * In a real application, this would use the Google Calendar API with an OAuth token.
  * @param _accessToken - The Google OAuth access token (unused in this mock).
  * @param maxResults - The maximum number of events to return.
@@ -21,13 +23,13 @@ export interface MockCalendarEvent {
 export async function getUpcomingEvents(
   _accessToken: string | undefined, // Parameter kept for interface consistency
   maxResults: number = 5
-): Promise<MockCalendarEvent[]> {
+): Promise<CalendarEvent[]> {
   console.log(`Mock fetching upcoming Google Calendar events (max: ${maxResults}). Token present: ${!!_accessToken}`);
   // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 700));
 
   const now = new Date();
-  const mockEvents: MockCalendarEvent[] = [
+  const mockEvents: CalendarEvent[] = [
     {
       id: 'event1',
       summary: 'Team Meeting',
@@ -69,24 +71,75 @@ export async function getUpcomingEvents(
 }
 
 /**
- * Simulates adding an event to Google Calendar.
- * @param _accessToken - The Google OAuth access token (used for logging presence in this mock).
+ * Adds an event to the user's primary Google Calendar.
+ * Requires a valid OAuth access token with 'https://www.googleapis.com/auth/calendar.events' scope.
+ * @param accessToken - The Google OAuth access token.
  * @param eventDetails - Details of the event to add.
- * @returns A promise that resolves to the mock created event.
+ * @returns A promise that resolves to the created calendar event.
+ * @throws Error if the API call fails.
  */
 export async function addCalendarEvent(
-  _accessToken: string | undefined,
+  accessToken: string | undefined,
   eventDetails: { summary: string; startDateTime: string; endDateTime: string; description?: string }
-): Promise<MockCalendarEvent> {
-  console.log(`Mock adding event to Google Calendar. Token present: ${!!_accessToken}`, eventDetails);
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const newEvent: MockCalendarEvent = {
-    id: `newEvent-${Date.now()}`,
+): Promise<CalendarEvent> {
+  if (!accessToken) {
+    console.error('Google Calendar API call attempted without an access token.');
+    throw new Error('Access token is required to add events to Google Calendar.');
+  }
+
+  console.log('Adding event to Google Calendar using real API:', eventDetails);
+
+  const apiUrl = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+  
+  const eventData = {
     summary: eventDetails.summary,
-    start: { dateTime: eventDetails.startDateTime },
-    end: { dateTime: eventDetails.endDateTime },
-    htmlLink: `https://calendar.google.com/calendar/event?eid=mockNewEvent-${Date.now()}`,
+    description: eventDetails.description,
+    start: {
+      dateTime: eventDetails.startDateTime,
+      // You might want to specify a timeZone, e.g., from user settings or eventDate
+      // timeZone: 'America/Los_Angeles', 
+    },
+    end: {
+      dateTime: eventDetails.endDateTime,
+      // timeZone: 'America/Los_Angeles',
+    },
   };
-  // In a real scenario, you'd post this to the API and get back the created event details.
-  return newEvent;
+
+  try {
+    const response = await axios.post(apiUrl, eventData, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Transform the Google API response to our CalendarEvent structure
+    // The response.data object structure should align with CalendarEvent
+    const createdEvent: CalendarEvent = {
+        id: response.data.id,
+        summary: response.data.summary,
+        start: { 
+            dateTime: response.data.start.dateTime, 
+            timeZone: response.data.start.timeZone 
+        },
+        end: { 
+            dateTime: response.data.end.dateTime,
+            timeZone: response.data.end.timeZone
+        },
+        htmlLink: response.data.htmlLink,
+        description: response.data.description,
+    };
+    return createdEvent;
+  } catch (error: any) {
+    console.error('Error adding event to Google Calendar:', error.response?.data || error.message);
+    if (axios.isAxiosError(error) && error.response) {
+      const status = error.response.status;
+      const errorMessage = error.response.data?.error?.message || error.message;
+      if (status === 401) {
+        throw new Error(`Authentication failed: ${errorMessage}. Please ensure you have a valid access token and the necessary permissions.`);
+      }
+      throw new Error(`Failed to add event to Google Calendar (HTTP ${status}): ${errorMessage}`);
+    }
+    throw new Error(`Failed to add event to Google Calendar: ${error.message}`);
+  }
 }
