@@ -29,7 +29,7 @@ export const addEventToCalendarTool = ai.defineTool(
     if (!parsedEvent.success) {
       console.error("Failed to parse event from Google Calendar API into schema. Issues:", parsedEvent.error.issues);
       // For more structured logging, you could use:
-      // console.error("Detailed parsing errors:", JSON.stringify(parsedEvent.error.format(), null, 2));
+      console.error("Detailed parsing errors:", JSON.stringify(parsedEvent.error.format(), null, 2));
       throw new Error("Received an unexpected event structure from Google Calendar API.");
     }
 

@@ -130,22 +130,22 @@ export async function addCalendarEvent(
     });
 
     // Transform the Google API response to our CalendarEvent structure
-    // Ensure null values from API for optional fields are converted to undefined for Zod parsing
+    // Ensure null or empty string values from API for optional fields are converted to undefined for Zod parsing
     const createdEvent: CalendarEvent = {
         id: response.data.id,
         summary: response.data.summary,
         start: { 
-            dateTime: response.data.start?.dateTime ?? undefined, 
-            date: response.data.start?.date ?? undefined,
-            timeZone: response.data.start?.timeZone ?? undefined 
+            dateTime: (response.data.start?.dateTime && response.data.start.dateTime.trim() !== "") ? response.data.start.dateTime : undefined, 
+            date: (response.data.start?.date && response.data.start.date.trim() !== "") ? response.data.start.date : undefined,
+            timeZone: (response.data.start?.timeZone && response.data.start.timeZone.trim() !== "") ? response.data.start.timeZone : undefined 
         },
         end: { 
-            dateTime: response.data.end?.dateTime ?? undefined,
-            date: response.data.end?.date ?? undefined,
-            timeZone: response.data.end?.timeZone ?? undefined
+            dateTime: (response.data.end?.dateTime && response.data.end.dateTime.trim() !== "") ? response.data.end.dateTime : undefined,
+            date: (response.data.end?.date && response.data.end.date.trim() !== "") ? response.data.end.date : undefined,
+            timeZone: (response.data.end?.timeZone && response.data.end.timeZone.trim() !== "") ? response.data.end.timeZone : undefined
         },
         htmlLink: response.data.htmlLink,
-        description: response.data.description ?? undefined,
+        description: (response.data.description && response.data.description.trim() !== "") ? response.data.description : undefined,
     };
     return createdEvent;
   } catch (error: any) {
