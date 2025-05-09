@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -47,16 +48,9 @@ export default function AddRideToCalendarDialog({
       return;
     }
 
-    if (accessToken && accessToken.startsWith('mock-token-')) {
-      toast({
-        title: "Mock Calendar Connection",
-        description: "This is a mock calendar connection. Adding events to Google Calendar requires proper OAuth authentication with Google.",
-        variant: "default", 
-        duration: 5000, 
-      });
-      onClose(); 
-      return;
-    }
+    // The access token is now expected to be a real OAuth token.
+    // The check for 'mock-token-' is removed. If there's no token, the button to open this dialog should be disabled.
+    // Error handling for invalid/expired tokens will happen in the API call.
 
     setIsSubmitting(true);
     try {
@@ -68,7 +62,7 @@ export default function AddRideToCalendarDialog({
       const rideEndDate = new Date(rideStartDate.getTime() + Number(durationHours) * 60 * 60 * 1000);
 
       const eventInput: AddCalendarEventInput = {
-        accessToken,
+        accessToken, // This should be the real Google OAuth access token
         summary: 'Bike Ride (Planned with Bike Buddy)',
         startDateTime: rideStartDate.toISOString(),
         endDateTime: rideEndDate.toISOString(),
@@ -83,7 +77,10 @@ export default function AddRideToCalendarDialog({
       onClose();
     } catch (error: any) {
       console.error('Failed to add event to calendar:', error);
-      const errorMessage = error.message || 'Could not add the ride to your calendar. Please try again.';
+      let errorMessage = error.message || 'Could not add the ride to your calendar. Please try again.';
+      if (error.message && error.message.includes("Authentication failed")) {
+        errorMessage = "Authentication failed. Your session might have expired. Please try disconnecting and reconnecting Google Calendar.";
+      }
       toast({
         title: 'Error Adding Event',
         description: errorMessage,
@@ -165,7 +162,7 @@ export default function AddRideToCalendarDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting || !accessToken}>
             {isSubmitting ? "Adding..." : "Add to Calendar"}
           </Button>
         </DialogFooter>
