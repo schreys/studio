@@ -70,7 +70,7 @@ export async function getUpcomingEvents(
 
 /**
  * Simulates adding an event to Google Calendar.
- * @param _accessToken - The Google OAuth access token (unused in this mock).
+ * @param _accessToken - The Google OAuth access token (used for logging presence in this mock).
  * @param eventDetails - Details of the event to add.
  * @returns A promise that resolves to the mock created event.
  */
@@ -78,7 +78,7 @@ export async function addCalendarEvent(
   _accessToken: string | undefined,
   eventDetails: { summary: string; startDateTime: string; endDateTime: string; description?: string }
 ): Promise<MockCalendarEvent> {
-  console.log('Mock adding event to Google Calendar:', eventDetails);
+  console.log(`Mock adding event to Google Calendar. Token present: ${!!_accessToken}`, eventDetails);
   await new Promise(resolve => setTimeout(resolve, 500));
   const newEvent: MockCalendarEvent = {
     id: `newEvent-${Date.now()}`,

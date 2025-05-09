@@ -32,6 +32,11 @@ export default function WeekForecastCard({ forecast, accessToken, locationName }
   const [selectedDayData, setSelectedDayData] = useState<ForecastItem | null>(null);
 
   const handleOpenDialog = (dayData: ForecastItem) => {
+    if (!accessToken) { 
+      console.error("Attempted to open dialog without an access token.");
+      // Optionally, show a toast to the user if this case is somehow reached
+      return;
+    }
     setSelectedDayData(dayData);
     setDialogOpen(true);
   };
