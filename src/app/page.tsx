@@ -7,7 +7,7 @@ import type { RideAnalysis } from '@/lib/ride-analyzer';
 import { analyzeRideConditions } from '@/lib/ride-analyzer';
 import WeekForecastCard from '@/components/bike-buddy/week-forecast-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const MOCK_ACCESS_TOKEN_KEY = 'mock_google_access_token';
@@ -15,10 +15,11 @@ const MOCK_ACCESS_TOKEN_KEY = 'mock_google_access_token';
 export type ForecastItem = DailyWeather & { analysis: RideAnalysis };
 
 export default function BikeBuddyPage() {
-  const [location] = useState<Location>({ lat: 34.0522, lng: -118.2437 }); // Example: Los Angeles
+  const [location, setLocation] = useState<Location | null>(null);
   const [forecastData, setForecastData] = useState<ForecastItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoadingForecast, setIsLoadingForecast] = useState(true);
+  const [isLoadingForecast, setIsLoadingForecast] = useState(false);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
 
@@ -30,9 +31,40 @@ export default function BikeBuddyPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setIsLoadingLocation(false);
+          setError(null); 
+        },
+        (err) => {
+          console.error("Error getting location:", err);
+          setError("Could not get your location. Please enable location services and refresh. Defaulting to a sample location for now.");
+          // Fallback to a default location if user denies or an error occurs
+          setLocation({ lat: 34.0522, lng: -118.2437 }); // Los Angeles
+          setIsLoadingLocation(false);
+        }
+      );
+    } else {
+      setError("Geolocation is not supported by your browser. Defaulting to a sample location.");
+      setLocation({ lat: 34.0522, lng: -118.2437 }); // Los Angeles
+      setIsLoadingLocation(false);
+    }
+  }, []);
+
   const fetchForecast = useCallback(async () => {
+    if (!location) return;
+
     setIsLoadingForecast(true);
-    setError(null);
+    // Keep existing error if it's a location error, otherwise clear for forecast fetch
+    if (!error?.includes("location")) {
+        setError(null);
+    }
     try {
       const dailyWeatherData = await getWeekForecast(location);
       const analyzedForecast = dailyWeatherData.map(dailyWeather => ({
@@ -42,16 +74,18 @@ export default function BikeBuddyPage() {
       setForecastData(analyzedForecast);
     } catch (e) {
       console.error("Failed to get forecast or analyze conditions:", e);
-      setError("Could not fetch weather forecast. Please try again later.");
+      setError((prevError) => prevError || "Could not fetch weather forecast. Please try again later.");
       setForecastData(null);
     } finally {
       setIsLoadingForecast(false);
     }
-  }, [location]);
+  }, [location, error]); // Added error to dependency array to avoid clearing location error
 
   useEffect(() => {
-    fetchForecast();
-  }, [fetchForecast]);
+    if (location) {
+      fetchForecast();
+    }
+  }, [location, fetchForecast]);
 
   const handleConnectCalendar = () => {
     setIsAuthLoading(true);
@@ -86,8 +120,25 @@ export default function BikeBuddyPage() {
             </CardHeader>
             <CardContent>
               <p className="text-destructive-foreground">{error}</p>
+              {error.includes("location") && !location && (
+                 <Button onClick={() => window.location.reload()} className="mt-4">Refresh to Retry Location</Button>
+              )}
             </CardContent>
           </Card>
+        )}
+
+        {isLoadingLocation && (
+            <Card className="w-full shadow-xl rounded-xl">
+                <CardHeader>
+                <CardTitle className="flex items-center">
+                    <MapPin className="h-6 w-6 mr-2 text-primary animate-pulse" />
+                    Fetching Your Location...
+                </CardTitle>
+                </CardHeader>
+                <CardContent>
+                <p className="text-muted-foreground">Please allow location access for personalized weather forecasts.</p>
+                </CardContent>
+            </Card>
         )}
 
         <Card className="w-full shadow-xl rounded-xl">
@@ -114,20 +165,20 @@ export default function BikeBuddyPage() {
           </CardContent>
         </Card>
 
-        {isLoadingForecast && !forecastData && !error && (
+        {isLoadingForecast && !forecastData && !error && !isLoadingLocation && (
            <Card className="w-full shadow-xl rounded-xl">
             <CardHeader>
               <CardTitle>Loading 7-Day Forecast...</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-60 flex items-center justify-center">
-                <p className="text-muted-foreground">Fetching week's weather conditions...</p>
+                <p className="text-muted-foreground">Fetching week's weather conditions for your location...</p>
               </div>
             </CardContent>
            </Card>
         )}
 
-        {!isLoadingForecast && forecastData && (
+        {!isLoadingLocation && !isLoadingForecast && forecastData && (
           <WeekForecastCard forecast={forecastData} accessToken={googleAccessToken} />
         )}
 
