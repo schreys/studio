@@ -11,6 +11,7 @@ import AddRideToCalendarDialog from './add-ride-to-calendar-dialog';
 interface WeekForecastCardProps {
   forecast: ForecastItem[];
   accessToken: string | null;
+  locationName: string | null;
 }
 
 const getWeatherIcon = (analysis: ForecastItem['analysis'], weather: ForecastItem) => {
@@ -26,7 +27,7 @@ const getWeatherIcon = (analysis: ForecastItem['analysis'], weather: ForecastIte
   return <HelpCircle className={`${iconSize} text-muted-foreground`} />;
 };
 
-export default function WeekForecastCard({ forecast, accessToken }: WeekForecastCardProps) {
+export default function WeekForecastCard({ forecast, accessToken, locationName }: WeekForecastCardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDayData, setSelectedDayData] = useState<ForecastItem | null>(null);
 
@@ -38,7 +39,9 @@ export default function WeekForecastCard({ forecast, accessToken }: WeekForecast
   return (
     <Card className="w-full shadow-xl rounded-xl">
       <CardHeader>
-        <CardTitle className="text-3xl font-bold text-primary">7-Day Bike Ride Forecast</CardTitle>
+        <CardTitle className="text-3xl font-bold text-primary">
+          7-Day Bike Ride Forecast {locationName && `for ${locationName}`}
+        </CardTitle>
         <CardDescription>Plan your rides for the week ahead. Connect Google Calendar to add events.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

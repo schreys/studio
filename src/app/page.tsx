@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Location, DailyWeather } from '@/services/weather';
-// Removed direct import of getWeekForecast
-import { fetchWeekForecastAction } from '@/app/actions/weather-actions'; // Import the server action
+import { fetchWeekForecastAction } from '@/app/actions/weather-actions'; 
 import type { RideAnalysis } from '@/lib/ride-analyzer';
 import { analyzeRideConditions } from '@/lib/ride-analyzer';
 import WeekForecastCard from '@/components/bike-buddy/week-forecast-card';
@@ -17,6 +16,7 @@ export type ForecastItem = DailyWeather & { analysis: RideAnalysis };
 
 export default function BikeBuddyPage() {
   const [location, setLocation] = useState<Location | null>(null);
+  const [locationName, setLocationName] = useState<string | null>(null);
   const [forecastData, setForecastData] = useState<ForecastItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingForecast, setIsLoadingForecast] = useState(false);
@@ -65,18 +65,19 @@ export default function BikeBuddyPage() {
         setError(null);
     }
     try {
-      // Call the server action instead of the direct service function
-      const dailyWeatherData = await fetchWeekForecastAction(location);
+      const { forecast: dailyWeatherData, locationName: fetchedLocationName } = await fetchWeekForecastAction(location);
       
       const analyzedForecast = dailyWeatherData.map(dailyWeather => ({
         ...dailyWeather,
         analysis: analyzeRideConditions(dailyWeather),
       }));
       setForecastData(analyzedForecast);
-    } catch (e: any) { // Catch errors from the server action
+      setLocationName(fetchedLocationName);
+    } catch (e: any) { 
       console.error("Failed to get forecast or analyze conditions:", e);
       setError((prevError) => prevError || e.message || "Could not fetch weather forecast. Please try again later.");
       setForecastData(null);
+      setLocationName(null);
     } finally {
       setIsLoadingForecast(false);
     }
@@ -169,18 +170,18 @@ export default function BikeBuddyPage() {
         {isLoadingForecast && !forecastData && !error && !isLoadingLocation && (
            <Card className="w-full shadow-xl rounded-xl">
             <CardHeader>
-              <CardTitle>Loading 7-Day Forecast...</CardTitle>
+              <CardTitle>Loading 7-Day Forecast {locationName && `for ${locationName}`}...</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-60 flex items-center justify-center">
-                <p className="text-muted-foreground">Fetching week's weather conditions for your location...</p>
+                <p className="text-muted-foreground">Fetching week's weather conditions...</p>
               </div>
             </CardContent>
            </Card>
         )}
 
         {!isLoadingLocation && !isLoadingForecast && forecastData && (
-          <WeekForecastCard forecast={forecastData} accessToken={googleAccessToken} />
+          <WeekForecastCard forecast={forecastData} accessToken={googleAccessToken} locationName={locationName} />
         )}
 
       </div>
@@ -190,4 +191,3 @@ export default function BikeBuddyPage() {
     </main>
   );
 }
-
