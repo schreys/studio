@@ -27,6 +27,7 @@ export const addEventToCalendarTool = ai.defineTool(
     // The CalendarEvent type from the service should already be compatible due to recent changes.
     const parsedEvent = CalendarEventSchema.safeParse(createdEventService);
     if (!parsedEvent.success) {
+      console.error(createdEventService)
       console.error("Failed to parse event from Google Calendar API into schema. Issues:", parsedEvent.error.issues);
       // For more structured logging, you could use:
       console.error("Detailed parsing errors:", JSON.stringify(parsedEvent.error.format(), null, 2));
