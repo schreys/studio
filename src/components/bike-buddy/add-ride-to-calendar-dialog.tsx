@@ -47,12 +47,23 @@ export default function AddRideToCalendarDialog({
       return;
     }
 
+    if (accessToken && accessToken.startsWith('mock-token-')) {
+      toast({
+        title: "Mock Calendar Connection",
+        description: "This is a mock calendar connection. Adding events to Google Calendar requires proper OAuth authentication with Google.",
+        variant: "default", 
+        duration: 5000, 
+      });
+      onClose(); 
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const [hours, minutes] = startTime.split(':').map(Number);
       
       const rideStartDate = new Date(eventDate);
-      rideStartDate.setHours(hours, minutes, 0, 0); // Sets local time
+      rideStartDate.setHours(hours, minutes, 0, 0); 
 
       const rideEndDate = new Date(rideStartDate.getTime() + Number(durationHours) * 60 * 60 * 1000);
 
@@ -70,11 +81,12 @@ export default function AddRideToCalendarDialog({
         description: `Event "${result.event.summary}" created for ${format(rideStartDate, "MMM d, yyyy 'at' h:mm a")}.`,
       });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to add event to calendar:', error);
+      const errorMessage = error.message || 'Could not add the ride to your calendar. Please try again.';
       toast({
         title: 'Error Adding Event',
-        description: 'Could not add the ride to your calendar. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -115,7 +127,7 @@ export default function AddRideToCalendarDialog({
                   selected={eventDate}
                   onSelect={setEventDate}
                   initialFocus
-                  disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} // Disable past dates
+                  disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))} 
                 />
               </PopoverContent>
             </Popover>
