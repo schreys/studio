@@ -1,3 +1,4 @@
+
 /**
  * @fileOverview Service for interacting with Google Calendar API.
  */
@@ -117,10 +118,10 @@ export async function addCalendarEvent(
     const response = await axios.post<{
       id: string;
       summary: string;
-      start?: { dateTime?: string; date?: string; timeZone?: string }; // Make response fields optional
-      end?: { dateTime?: string; date?: string; timeZone?: string };   // Make response fields optional
+      start?: { dateTime?: string | null; date?: string | null; timeZone?: string | null }; 
+      end?: { dateTime?: string | null; date?: string | null; timeZone?: string | null };   
       htmlLink: string;
-      description?: string;
+      description?: string | null;
     }>(apiUrl, eventData, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -129,21 +130,22 @@ export async function addCalendarEvent(
     });
 
     // Transform the Google API response to our CalendarEvent structure
+    // Ensure null values from API for optional fields are converted to undefined for Zod parsing
     const createdEvent: CalendarEvent = {
         id: response.data.id,
         summary: response.data.summary,
         start: { 
-            dateTime: response.data.start?.dateTime, 
-            date: response.data.start?.date,
-            timeZone: response.data.start?.timeZone 
+            dateTime: response.data.start?.dateTime ?? undefined, 
+            date: response.data.start?.date ?? undefined,
+            timeZone: response.data.start?.timeZone ?? undefined 
         },
         end: { 
-            dateTime: response.data.end?.dateTime,
-            date: response.data.end?.date,
-            timeZone: response.data.end?.timeZone
+            dateTime: response.data.end?.dateTime ?? undefined,
+            date: response.data.end?.date ?? undefined,
+            timeZone: response.data.end?.timeZone ?? undefined
         },
         htmlLink: response.data.htmlLink,
-        description: response.data.description,
+        description: response.data.description ?? undefined,
     };
     return createdEvent;
   } catch (error: any) {
